@@ -15,7 +15,7 @@ import (
 
 func ConnectSession(ctx *gin.Context) {
 	db := ctx.MustGet("db").(*mongo.Client)
-	collection := db.Database("MeetJS").Collection("sockets")
+	collection := db.Database("meet").Collection("sockets")
 
 	url := ctx.Param("url")
 	result := collection.FindOne(ctx, bson.M{"hashedurl": url})
@@ -34,7 +34,7 @@ func ConnectSession(ctx *gin.Context) {
 	var socket models.Socket
 	result.Decode(&socket)
 
-	collection = db.Database("MeetJS").Collection("sessions")
+	collection = db.Database("meet").Collection("sessions")
 	objectID, err := primitive.ObjectIDFromHex(socket.SessionID)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Session not found."})
@@ -61,9 +61,25 @@ func ConnectSession(ctx *gin.Context) {
 	})
 }
 
+func GetSession(ctx *gin.Context) {
+
+	db := ctx.MustGet("db").(*mongo.Client)
+	collection := db.Database("meet").Collection("sockets")
+
+	id := ctx.Request.URL.Query()["url"][0]
+	result := collection.FindOne(ctx, bson.M{"hashedurl": id})
+
+	if result.Err() != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Socket connection not found."})
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
 func CreateSocket(session models.Session, ctx *gin.Context, id string) string {
 	db := ctx.MustGet("db").(*mongo.Client)
-	collection := db.Database("MeetJS").Collection("sockets")
+	collection := db.Database("meet").Collection("sockets")
 
 	var socket models.Socket
 	hashURL := hashSession(session.Host + session.Title)
